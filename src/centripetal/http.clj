@@ -2,16 +2,20 @@
   (:require
    [com.stuartsierra.component :as component]
    [io.pedestal.http :as server]
-   [io.pedestal.http.route :as route]))
+   [io.pedestal.http.route :as route]
+   [io.pedestal.interceptor :as interceptor]))
 
 (defn indicator [context]
   (prn "single indicator")
   (assoc context
          :response {:status 200 :headers {} :body "a"}))
 
+(def d (atom nil))
+(defn indicators [context]
+  (reset! d (first (:db context)))
+  {:status 200 :headers {} :body "david"})
 
-
-(defn indicators [db]
+#_(defn indicators [db]
   (fn [context]
     (reset! c {:context context :db db})
     {:status 200 :headers {} :body "david"}))
@@ -21,16 +25,10 @@
   (assoc context
          :response {:status 200 :headers {} :body "c"}))
 
-#_(defn db-interceptor [db]
-  (interceptor/interceptor
-   {:name ::with-db
-    :enter (fn [context]
-             (assoc context :db db))}))
-
-(defn routes [db]
-  #{["/indicators"        :get (indicators db)         :route-name :indicators]
-    ["/indicators/:id"    :get (indicator db)          :route-name :indicator]
-    ["/indicators/search" :post (search-indicators db) :route-name :search-indicators]})
+(def routes
+  #{["/indicators"        :get indicators         :route-name :indicators]
+    ["/indicators/:id"    :get indicator          :route-name :indicator]
+    ["/indicators/search" :post search-indicators :route-name :search-indicators]})
 
 (defrecord HTTP [db config]
   component/Lifecycle
@@ -40,10 +38,14 @@
      :server
      (cond->
       (server/create-server
-       {::server/routes (route/expand-routes (routes db))
+       {::server/routes (route/expand-routes routes)
         ::server/type :jetty
         ::server/join? false
-        ::server/port 8080})
+        ::server/port 8080
+        ::server/interceptors [(interceptor/interceptor
+                                {:name ::db-interceptor
+                                 :enter (fn [context]
+                                          (assoc context :db db))})]})
        true
        server/default-interceptors
 

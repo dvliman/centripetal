@@ -2,44 +2,52 @@
   (:require
    [com.stuartsierra.component :as component]
    [io.pedestal.http :as server]
-   [ring.util.response :as resp]))
+   [io.pedestal.http.route :as route]))
 
-(defn indicator [req])
+(defn indicator [context]
+  (prn "single indicator")
+  (assoc context
+         :response {:status 200 :headers {} :body "a"}))
 
-(defn indicators [req])
 
-(defn search-indicator [req])
 
-(defn db-interceptor [db]
-  {:name ::with-db
-   :enter (fn [context]
-            (assoc context :db db))})
+(defn indicators [db]
+  (fn [context]
+    (reset! c {:context context :db db})
+    {:status 200 :headers {} :body "david"}))
 
-(defn with-db [db]
-  (fn [service-map]
-    (update service-map ::server/interceptors (fn [interceptors] (conj interceptors (db-interceptor db))))))
+(defn search-indicators [context]
+  (prn "search-indicators")
+  (assoc context
+         :response {:status 200 :headers {} :body "c"}))
 
-(def routes
-  #{["/indicators"        :get indicators :route-name :indicators]
-    ["/indicators/:id"    :get indicator :route-name :indicator]
-    ["/indicators/search" :post search-indicator :route-name :search-indicator]})
+#_(defn db-interceptor [db]
+  (interceptor/interceptor
+   {:name ::with-db
+    :enter (fn [context]
+             (assoc context :db db))}))
 
-(defrecord HTTP [db]
+(defn routes [db]
+  #{["/indicators"        :get (indicators db)         :route-name :indicators]
+    ["/indicators/:id"    :get (indicator db)          :route-name :indicator]
+    ["/indicators/search" :post (search-indicators db) :route-name :search-indicators]})
+
+(defrecord HTTP [db config]
   component/Lifecycle
   (start [this]
     (assoc
      this
      :server
-     (->
-      {:env :dev
-       ::server/routes routes
-       ::server/type :jetty
-       ::server/join? false
-       ::server/port 8080}
-      server/default-interceptors
-      ((with-db db))
-      server/create-server
-      server/start)))
+     (cond->
+      (server/create-server
+       {::server/routes (route/expand-routes (routes db))
+        ::server/type :jetty
+        ::server/join? false
+        ::server/port 8080})
+       true
+       server/default-interceptors
+
+       (not (= :test (:env config)))
+       server/start)))
   (stop [this]
-    (prn this)
     (server/stop (:server this))))

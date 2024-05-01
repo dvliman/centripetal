@@ -13,14 +13,21 @@
             (when system
               (component/stop system)))))
 
-(defn create-system []
-  (component/system-using
-   (component/system-map
-    :db (db/map->DB {:file-path (env :file-path "/Users/dliman/centripetal/resources/indicators.json")})
-    :http (component/using
-           (http/map->HTTP nil)
-           [:db]))
-   {:http [:db]}))
+(def default-config
+  {:env       (env :environment "production")
+   :file-path (env :file-path "/Users/dliman/centripetal/resources/indicators.json")})
+
+(defn create-system
+  ([]
+   (create-system {}))
+  ([overrides]
+   (let [config (into default-config overrides)]
+     (component/system-using
+      (component/system-map
+       :env (:env config)
+       :db (db/map->DB {:file-path (:file-path config)})
+       :http (component/using (http/map->HTTP {:config config}) [:db :env]))
+      {:http [:db]}))))
 
 (defn -main [& args]
   (alter-var-root #'system (constantly (component/start (create-system))))

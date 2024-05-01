@@ -1,8 +1,7 @@
 (ns centripetal.http
   (:require
    [com.stuartsierra.component :as component]
-   [io.pedestal.http :as pedestal.http]
-   [io.pedestal.http.route :as route]
+   [io.pedestal.http :as server]
    [ring.util.response :as resp]))
 
 (defn indicator [req])
@@ -11,30 +10,36 @@
 
 (defn search-indicator [req])
 
-(defn with-db [db]
+(defn db-interceptor [db]
   {:name ::with-db
    :enter (fn [context]
             (assoc context :db db))})
 
-;; TODO inject database interceptor
-(defn routes [db]
-  [[["/" ^:interceptors [(with-db db)]
-     ["/indicators"        {:get indicators}]
-     ["/indicators/:id"    {:get indicator}]
-     ["/indicators/search" {:post search-indicator}]]]])
+(defn with-db [db]
+  (fn [service-map]
+    (update service-map ::server/interceptors (fn [interceptors] (conj interceptors (db-interceptor db))))))
 
-(defrecord HTTPServer [db]
+(def routes
+  #{["/indicators"        :get indicators :route-name :indicators]
+    ["/indicators/:id"    :get indicator :route-name :indicator]
+    ["/indicators/search" :post search-indicator :route-name :search-indicator]})
+
+(defrecord HTTP [db]
   component/Lifecycle
   (start [this]
     (assoc
      this
-     :http-server
+     :server
      (->
       {:env :dev
-       ::http/routes (routes db)
-       ::http/join? false
-       ::http/port 8080}
-      http/default-interceptors
-      http/create-server
-      http/start)))
-  (stop [this]))
+       ::server/routes routes
+       ::server/type :jetty
+       ::server/join? false
+       ::server/port 8080}
+      server/default-interceptors
+      ((with-db db))
+      server/create-server
+      server/start)))
+  (stop [this]
+    (prn this)
+    (server/stop (:server this))))

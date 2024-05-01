@@ -5,9 +5,11 @@
    [clojure.walk :as walk]
    [com.stuartsierra.component :as component]))
 
-(defrecord Database [db-filepath]
+(defrecord DB [file-path]
   component/Lifecycle
   (start [this]
-    (assoc this :db (with-open [reader (io/reader (io/file db-filepath))]
-                      (-> reader slurp json/decode walk/keywordize-keys))))
+    (assoc
+     this
+     :conn
+     (-> file-path slurp json/decode walk/keywordize-keys)))
   (stop [this]))

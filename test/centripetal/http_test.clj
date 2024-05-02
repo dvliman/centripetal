@@ -58,15 +58,3 @@
           response (r/response-for service-fn :get "/indicators?type=unknown-type")]
       (is (= 200 (:status response)))
       (is (empty? (read-json response))))))
-
-(deftest search-indicator-test
-  (testing "search"))
-
-#_(let [data       (gen/generate-compromises)
-      service-fn (mock-db data)
-      response (r/response-for
-                service-fn
-                :post "/indicators/search"
-                :body (json/encode {:a :b})
-                :headers {"Content-Type" "application/json"})]
-  response)

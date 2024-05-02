@@ -14,7 +14,8 @@
               (component/stop system)))))
 
 (def default-config
-  {:env       (env :environment "production")
+  {:port      8080
+   :env       (env :environment "production")
    :file-path (env :file-path "/Users/dliman/centripetal/resources/indicators.json")})
 
 (defn create-system

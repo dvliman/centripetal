@@ -11,21 +11,10 @@
    :headers {"Content-Type" "application/json"}
    :body (json/encode body)})
 
-(defn bad-response [body]
-  {:status 400
-   :headers {"Content-Type" "application/json"}
-   :body (json/encode body)})
-
 (defn not-found [body]
   {:status 404
    :headers {"Content-Type" "application/json"}
    :body (json/encode body)})
-
-(def a (atom nil))
-
-(defn capture [x]
-  (reset! a x)
-  x)
 
 (defn indicator [{:keys [conn]}]
   (fn [{{:keys [id]} :path-params}]
@@ -39,16 +28,13 @@
 
 (defn indicators [{:keys [conn]}]
   (fn [context]
-    (capture context)
     (if-let [type (some-> context :params :type)]
       (json-response (filter (match-type? type) conn))
       (json-response conn))))
 
 (defn search-indicators [{:keys [conn]}]
   (fn [context]
-    (prn "search")
-    (capture context)
-    {:status 200 :headers {} :body "c"}))
+    {:status 200 :headers {} :body "search response"}))
 
 (defn routes [db]
   #{["/indicators"        :get (indicators db) :route-name :indicators]
@@ -70,7 +56,7 @@
         {::server/routes (route/expand-routes (routes db))
          ::server/type :jetty
          ::server/join? false
-         ::server/port 8080}))
+         ::server/port (:port config)}))
 
        (production? config)
        server/start)))

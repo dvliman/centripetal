@@ -58,3 +58,55 @@
           response (r/response-for service-fn :get "/indicators?type=unknown-type")]
       (is (= 200 (:status response)))
       (is (empty? (read-json response))))))
+
+(deftest search-test
+  (testing "search term is required"
+    (let [service-fn (mock-db (gen/generate-compromises))
+          response (r/response-for
+                    service-fn
+                    :post "/indicators/search"
+                    :body (json/encode {})
+                    :headers {"Content-Type" "application/json"})]
+      (is (= 400 (:status response)))
+      (is (= {:reason "search term is required"}
+             (read-json response)))))
+
+  (testing "search with unrecognized term"
+    (let [service-fn (mock-db (gen/generate-compromises))
+          response (r/response-for
+                    service-fn
+                    :post "/indicators/search"
+                    :body (json/encode {"term" "unknown"})
+                    :headers {"Content-Type" "application/json"})]
+      (is (= 400 (:status response)))
+      (is (= {:reason "search term contains extra or missing keys"}
+             (read-json response)))))
+
+  (testing "search with single term"
+    (let [[compromise1 compromise2 :as data]
+          (gen/generate-compromises 2)
+
+          service-fn (mock-db data)
+          response (r/response-for
+                    service-fn
+                    :post "/indicators/search"
+                    :body (json/encode {:author_name (:author_name compromise1)})
+                    :headers {"Content-Type" "application/json"})]
+      (is (= 200 (:status response)))
+      (is (= (:id compromise1)
+             (:id (first (read-json response)))))))
+
+  (testing "search with multiple terms matching single document"
+    (let [[compromise1 compromise2 :as data]
+          (gen/generate-compromises 2)
+
+          service-fn (mock-db data)
+          response (r/response-for
+                    service-fn
+                    :post "/indicators/search"
+                    :body (json/encode {:tlp (:tlp compromise2)
+                                        :author_name (:author_name compromise2)})
+                    :headers {"Content-Type" "application/json"})]
+      (is (= 200 (:status response)))
+      (is (= (:id compromise2)
+             (:id (first (read-json response))))))))

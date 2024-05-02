@@ -3,7 +3,8 @@
    [com.stuartsierra.component :as component]
    [centripetal.db :as db]
    [centripetal.http :as http]
-   [environ.core :refer [env]]))
+   [environ.core :refer [env]]
+   [clojure.tools.logging :as log]))
 
 (def system nil)
 
@@ -16,7 +17,7 @@
 (def default-config
   {:port      8080
    :env       (env :environment "production")
-   :file-path (env :file-path "/Users/dliman/centripetal/resources/indicators.json")})
+   :file-path (env :file-path "resources/indicators.json")})
 
 (defn create-system
   ([]
@@ -31,6 +32,7 @@
 
 (defn -main [& args]
   (alter-var-root #'system (constantly (component/start (create-system))))
+  (log/info "server started")
   :started)
 
 (defn stop

@@ -1,15 +1,44 @@
-How to run:
+How to run (if clojure is installed)
 
 ```
-# if clojure is installed
+# make server
 clj -P
 clj -M -m centripetal.main
 
-# 
 ```
 
+With docker 
 
-Filter indicators by type
+```
+# make docker
+docker compose up
+```
+
+Running the tests:
+
+```
+❯ make test
+clj -M:test
+
+Running tests in #{"test"}
+
+Testing centripetal.http-test
+
+Ran 3 tests containing 17 assertions.
+0 failures, 0 errors.
+```
+
+**Context:**
+* This is the first time I use pedestal and component. I haven't spend much time understanding the APIs 
+and internals.
+* The naming GET /indicators slightly throw me off because there is a top-level key called "indicators"
+in the compromise document. I made a reasonable assumption that we are searching for the top-level document.
+* Happy to walkthrough the code
+
+****Area for improvements:**
+* Understand more about inceptors i.e to handle catch-all error handling and logging
+ 
+### Filter indicators by type
 
 ``` 
 
@@ -41,14 +70,14 @@ curl -v http://localhost:8080/indicators\?type\=FileHash-MD5 | jq .
 
 ```
 
-Get all indicators
+### Get all indicators
 
 ```
 curl -v http://localhost:8080/indicators | jq . 
 
 ```
 
-Get single indicator
+### Get single indicator
 
 ```
 curl -v http://localhost:8080/indicators/5b3af7d85996b430b393f3d6

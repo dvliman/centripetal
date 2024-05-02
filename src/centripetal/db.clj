@@ -12,8 +12,8 @@
   (start [this]
     (assoc
      this
-     :conn
+     :conn ;; conn here refers to the entire db dataset
      (if (test? config)
-       (:conn config)
+       (:conn config) ;; mock data
        (-> config :file-path slurp json/decode walk/keywordize-keys))))
   (stop [_]))

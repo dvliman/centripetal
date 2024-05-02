@@ -1,5 +1,7 @@
 (ns centripetal.generator
   (:require
+   [malli.util :as mu]
+   [malli.core :as m]
    [malli.generator :as gen]))
 
 (def IndicatorOfCompromise
@@ -41,8 +43,29 @@
    [:id string?] ;; TODO: more id like
    [:name string?]])
 
+(def searchable-compromise-fields
+  (->> (rest IndicatorOfCompromise)
+       (map
+        (fn [[field pred]]
+          (when (or (= pred int?)
+                    (= pred string?))
+            field)))
+       (remove nil?)))
+
 (defn generate-compromises
   ([]
    (generate-compromises 1))
   ([how-many]
    (repeatedly how-many (constantly (gen/generate IndicatorOfCompromise)))))
+
+(defn valid-search-params? [compromise]
+  (let [allowed-fields (->> (rest IndicatorOfCompromise)
+                            (map
+                             (fn [[field pred]]
+                               (when (or (= pred int?)
+                                         (= pred string?))
+                                 [field pred])))
+                            (remove nil?)
+                            (into [:map {:closed true}])
+                            mu/optional-keys)]
+    (m/validate allowed-fields compromise)))

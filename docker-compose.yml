@@ -1,10 +1,11 @@
 version: "3.9"
 services:
   centripetal:
-    image: clojure:temurin-8-tools-deps
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
       - ENVIRONMENT=production
       - FILE_PATH=resources/indicators.json
-    command: clj -M -m centripetal/main

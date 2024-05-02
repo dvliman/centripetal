@@ -5,39 +5,68 @@
             [io.pedestal.http :as server]
             [com.stuartsierra.component :as component]
             [clojure.test :refer [deftest is testing]]
-            [io.pedestal.http.route :as route]
-            [io.pedestal.test :as r]))
+            [io.pedestal.test :as r]
+            [cheshire.core :as json]
+            [clojure.walk :as walk]))
 
-(def test-overrides
-  {:env :test})
-
-;; warning: modifying live system
 (defn mock-db [content]
-  (let [system (component/start (main/create-system test-overrides))
-        system (update-in system [:db :conn] (constantly content))]
+  (let [system (component/start
+                (main/create-system
+                 {:env :test
+                  :conn content}))]
     (-> system :http :server ::server/service-fn)))
-(-> (component/start (main/create-system test-overrides))
-    :http :server
 
-    )
+(defn read-json [response]
+  (-> response :body json/decode walk/keywordize-keys))
+
 (deftest single-indicator-test
   (testing "retrieve a single indicator by ID"
-    (let [data (gen/generate-compromises)
-          url1 (str "/indicator/" (-> data first :id))
-          url2 "/indicator/not-found"
+    (let [data       (gen/generate-compromises)
+          id         (-> data first :id)
+          url        (str "/indicators/" id)
+          service-fn (mock-db data)
+          response (r/response-for service-fn :get url)]
+      (is (= 200 (:status response)))
+      (is (= id (:id (read-json response))))))
 
-          service-fn (mock-db data)]
-      (r/response-for service-fn :get url1))))
+  (testing "not found"
+    (let [data       (gen/generate-compromises)
+          service-fn (mock-db data)
+          response   (r/response-for service-fn :get "/indicators/id-not-found")]
+      (is (= 404 (:status response))))))
 
-(let [data (gen/generate-compromises)
-          url1 (str "/indicators/" (-> data first :id))
-          url2 "/indicators/not-found"
+(deftest multiple-indicators-test
+  (testing "get all compromises"
+    (let [data       (gen/generate-compromises 2)
+          service-fn (mock-db data)
+          response (r/response-for service-fn :get "/indicators")]
+      (is (= 200 (:status response)))
+      (is (= (map :id data)
+             (map :id (read-json response))))))
 
-          service-fn (mock-db data)]
-  (r/response-for service-fn :get url1))
-#_(let [system (component/start (main/create-system test-overrides))
-       system (update-in system [:db :conn] (constantly {:a :b}))]
-  (as-> (-> system :http :server ::server/service-fn) service-fn
-    (r/response-for service-fn :get "/indicators?q=yay")))
-d925AdgG4W5BGt2rb8uQ7LLvop
-@centripetal.http/a
+  (testing "filter by matching type"
+    (let [data       (gen/generate-compromises 2)
+          service-fn (mock-db data)
+          response (r/response-for service-fn :get (str "/indicators?type=" (-> data first :indicators first :type)))]
+      (is (= 200 (:status response)))
+      (is (= (-> data first :id)
+             (-> (read-json response) first :id)))))
+
+  (testing "no type matched"
+    (let [data       (gen/generate-compromises 2)
+          service-fn (mock-db data)
+          response (r/response-for service-fn :get "/indicators?type=unknown-type")]
+      (is (= 200 (:status response)))
+      (is (empty? (read-json response))))))
+
+(deftest search-indicator-test
+  (testing "search"))
+
+#_(let [data       (gen/generate-compromises)
+      service-fn (mock-db data)
+      response (r/response-for
+                service-fn
+                :post "/indicators/search"
+                :body (json/encode {:a :b})
+                :headers {"Content-Type" "application/json"})]
+  response)

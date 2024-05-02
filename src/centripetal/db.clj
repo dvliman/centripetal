@@ -1,15 +1,19 @@
 (ns centripetal.db
   (:require
    [cheshire.core :as json]
-   [clojure.java.io :as io]
    [clojure.walk :as walk]
    [com.stuartsierra.component :as component]))
 
-(defrecord DB [file-path]
+(defn test? [config]
+  (= :test (:env config)))
+
+(defrecord DB [config]
   component/Lifecycle
   (start [this]
     (assoc
      this
      :conn
-     (-> file-path slurp json/decode walk/keywordize-keys)))
-  (stop [this]))
+     (if (test? config)
+       (:conn config)
+       (-> config :file-path slurp json/decode walk/keywordize-keys))))
+  (stop [_]))

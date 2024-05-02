@@ -24,9 +24,8 @@
    (let [config (into default-config overrides)]
      (component/system-using
       (component/system-map
-       :env (:env config)
-       :db (db/map->DB {:file-path (:file-path config)})
-       :http (component/using (http/map->HTTP {:config config}) [:db :env]))
+       :db (db/map->DB {:config config})
+       :http (component/using (http/map->HTTP {:config config}) [:db]))
       {:http [:db]}))))
 
 (defn -main [& args]

@@ -2,22 +2,45 @@
   (:require
    [com.stuartsierra.component :as component]
    [io.pedestal.http :as server]
-   [io.pedestal.http.route :as route]))
+   [io.pedestal.http.route :as route]
+   [cheshire.core :as json]))
 
-(defn indicator [db]
-  (fn [context]
-    {:status 200 :headers {} :body "a"}))
+(defn json-response [body]
+  {:status 200
+   :headers {"Content-Type" "application/json"}
+   :body (json/encode body)})
 
-(def c (atom nil))
+(defn bad-response [body]
+  {:status 400
+   :headers {"Content-Type" "application/json"}
+   :body (json/encode body)})
+
+(defn not-found [body]
+  {:status 404
+   :headers {"Content-Type" "application/json"}
+   :body (json/encode body)})
+
+(def a (atom nil))
+
+(defn capture [x]
+  (reset! a x)
+  x)
+(defn indicator [{:keys [conn]}]
+  (fn [{{:keys [id]} :path-params}]
+    (reset! a conn)
+    (if-let [compromise (first (filter #(= (:id %) id) conn))]
+      (json-response compromise)
+      (not-found {:id id}))))
 
 (defn indicators [db]
   (fn [context]
-    (reset! c {:context context :db (keys db)})
+    (prn "multiple")
     {:status 200 :headers {} :body "david"}))
 
 (defn search-indicators [db]
   (fn [context]
-  {:status 200 :headers {} :body "c"}))
+    (prn "search")
+    {:status 200 :headers {} :body "c"}))
 
 (defn routes [db]
   #{["/indicators"        :get (indicators db) :route-name :indicators]

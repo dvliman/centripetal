@@ -13,6 +13,8 @@ With docker
 # make docker
 docker compose up
 ```
+* just use the clojure command
+* run into issue with docker; jakarta/servlet is outdated, bumping down run into issues with M1 chip 
 
 Running the tests:
 
@@ -35,8 +37,10 @@ and internals.
 in the compromise document. I made a reasonable assumption that we are searching for the top-level document.
 * Happy to walkthrough the code
 
-****Area for improvements:**
+**Area for improvements:**
 * Understand more about inceptors i.e to handle catch-all error handling and logging
+* query params constraint with schema
+* openapi
  
 ### Filter indicators by type
 

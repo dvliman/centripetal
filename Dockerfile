@@ -1,4 +1,3 @@
-# jakarta servlet compiles up to 52 (pedestal issue)
 FROM --platform=linux/x86_64 clojure:openjdk-8-tools-deps-1.10.1.727
 RUN mkdir /app
 WORKDIR /app

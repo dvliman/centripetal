@@ -13,8 +13,11 @@ With docker
 # make docker
 docker compose up
 ```
-* just use the clojure command
-* run into issue with docker; jakarta/servlet is outdated, bumping down run into issues with M1 chip 
+* please use the clojure command
+* run into issues with docker
+  * jakarta/servlet is outdated (compiles up to 52 - java 8),
+    * bumping down wouldn't work with M1 chip 
+      * can bundle jar inside but I have limited time this week
 
 Running the tests:
 
@@ -31,22 +34,24 @@ Ran 3 tests containing 17 assertions.
 ```
 
 **Context:**
-* This is the first time I use pedestal and component. I haven't spend much time understanding the APIs 
+* This is the first time I use pedestal and component. I haven't spend much time to learn deeply with the APIs 
 and internals.
-* The naming GET /indicators slightly throw me off because there is a top-level key called "indicators"
-in the compromise document. I made a reasonable assumption that we are searching for the top-level document.
+* Made a few assumptions:
+  * the naming GET /indicators slightly throw me off because there is a top-level key called "indicators"
+in the compromise document. I assume we are asking for top-level document, not the indicators.
+  * for search endpoint, use simple search terms, no syntax to drill down matching tags, indicators, etc
 * Happy to walkthrough the code
 
 **Area for improvements:**
-* Understand more about inceptors i.e to handle catch-all error handling and logging
-* query params constraint with schema
+* Learn about interceptors i.e to handle catch-all error handling and logging
+* query params constraint with schema (validation)
 * openapi
  
-### Filter indicators by type
+### Filter Indicators by type
 
 ``` 
 
-curl -v http://localhost:8080/indicators\?type\=FileHash-MD5 | jq .
+curl http://localhost:8080/indicators\?type\=FileHash-MD5 | jq .
 
 [
   {
@@ -74,17 +79,17 @@ curl -v http://localhost:8080/indicators\?type\=FileHash-MD5 | jq .
 
 ```
 
-### Get all indicators
+### Get All Indicators
 
 ```
-curl -v http://localhost:8080/indicators | jq . 
+curl http://localhost:8080/indicators | jq . 
 
 ```
 
-### Get single indicator
+### Get Single Indicator
 
 ```
-curl -v http://localhost:8080/indicators/5b3af7d85996b430b393f3d6
+curl http://localhost:8080/indicators/5b3af7d85996b430b393f3d6
 {
   "description": "phpMyAdmin honeypot logs from a US /32",
   "tags": [
@@ -97,5 +102,11 @@ curl -v http://localhost:8080/indicators/5b3af7d85996b430b393f3d6
   "public": 1,
   ....
 }
+```
+
+### Search Indicators
+
+```
+curl -XPOST http://localhost:8080/indicators/search -H "Content-Type: application/json" -d '{"author_name": "marcoramilli"}'
 ```
 
